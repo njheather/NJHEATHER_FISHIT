@@ -533,20 +533,6 @@ end
 
 local function createItemCard(slider, itemId, name, price, stats, imageId, rawData, category)
     local isOwned = false
-    -- if category == "Fishing Rods" or category == "Baits" then
-    --     local inventory = Data:GetExpect({"Inventory", category})
-    --     if inventory then
-    --         for _, item in ipairs(inventory) do
-    --             if item.Id == itemId then
-    --                 local staticData = ItemUtility.GetItemDataFromItemType(category, item.Id)
-    --                 if staticData then
-    --                     isOwned = true
-    --                     break
-    --                 end
-    --             end
-    --         end
-    --     end
-    -- end
     local inventory = Data:GetExpect({"Inventory", category})
     if inventory then
         for _, item in ipairs(inventory) do
@@ -584,7 +570,7 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
     })
     
     -- 2. NAME
-    create("TextLabel", {
+    local nameLabel create("TextLabel", {
         Parent = card,
         Size = UDim2.new(1, -10, 0, 25),
         Position = UDim2.new(0, 5, 0, 15),
@@ -592,7 +578,7 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
         Text = name,
         TextColor3 = UI_CONFIG.Colors.Pink,
         Font = Enum.Font.GothamBlack,
-        TextSize = 18,
+        TextScaled = true,
         TextWrapped = true,
         TextXAlignment = Enum.TextXAlignment.Center,
         TextYAlignment = Enum.TextYAlignment.Top,
@@ -600,6 +586,10 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
         TextStrokeColor3 = UI_CONFIG.Colors.Black,
         ZIndex = 3
     })
+    local constraintName = Instance.new("UITextSizeConstraint")
+    constraintName.MaxTextSize = 18
+    constraintName.MinTextSize = 12
+    constraintName.Parent = nameLabel
 
     -- 3. BUTTON
     if isOwned then
@@ -749,10 +739,10 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
         ZIndex = 3
     })
 
-    local constraint = Instance.new("UITextSizeConstraint")
-    constraint.MaxTextSize = 16
-    constraint.MinTextSize = 10
-    constraint.Parent = statsLabel
+    local constraintStats = Instance.new("UITextSizeConstraint")
+    constraintStats.MaxTextSize = 16
+    constraintStats.MinTextSize = 10
+    constraintStats.Parent = statsLabel
 end
 
 local RodSlider, RodBtn = createStoreCategory("RODS")
