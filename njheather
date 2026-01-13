@@ -1,0 +1,841 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Client = require(ReplicatedStorage.Packages.Replion).Client
+local Data = Client:WaitReplion("Data")
+local ItemUtility = require(ReplicatedStorage.Shared.ItemUtility)
+local PromptController = require(ReplicatedStorage.Controllers.PromptController)
+local TextNotificationController = require(ReplicatedStorage.Controllers.TextNotificationController)
+
+-- 1. CONFIG
+local UI_CONFIG = {
+    Title = "NJHEATHER",
+    
+    Colors = {
+        White      = BrickColor.new("White").Color,
+        
+        LightGrey  = BrickColor.new("Dark grey").Color,    
+        
+        Grey       = BrickColor.new("Light stone grey").Color, 
+        
+        DarkGrey   = BrickColor.new("Really black").Color,        
+        Purple     = BrickColor.new("Royal purple").Color,        
+        Pink       = BrickColor.new("Hot pink").Color,            
+        
+        Green      = BrickColor.new("Bright green").Color,          
+        
+        Red        = BrickColor.new("Bright red").Color,          
+        Black      = Color3.new(0,0,0)                            
+    },
+    
+    IconFont = Font.new(
+        "rbxasset://LuaPackages/Packages/_Index/BuilderIcons/BuilderIcons/BuilderIcons.json",
+        Enum.FontWeight.Regular,
+        Enum.FontStyle.Normal
+    )
+}
+
+-- 2. MENU LIST
+local menuItems = {
+    {Name = "DASHBOARD", IconText = "three-bars-horizontal"},
+    {Name = "TELEPORT",  IconText = "globe-detailed"}, 
+    {Name = "STORE",     IconText = "shopping-cart"},     
+    {Name = "WEBHOOK",   IconText = "chain-link"},           
+    {Name = "ABOUT",     IconText = "circle-i"}         
+}
+
+-- 3. HELPER FUNCTIONS
+local function create(className, properties)
+    local instance = Instance.new(className)
+    for k, v in pairs(properties) do
+        if k == "Padding" and type(v) == "table" then
+        elseif k ~= "CornerRadius" and k ~= "StrokeColor" and k ~= "StrokeThickness" and k ~= "StrokeTransparency" and k ~= "TextStrokeTransparency" and k ~= "TextStrokeColor3" and k ~= "FontFace" then
+            instance[k] = v
+        end
+    end
+    if properties.FontFace then instance.FontFace = properties.FontFace end
+    
+    if properties.TextStrokeTransparency then instance.TextStrokeTransparency = properties.TextStrokeTransparency end
+    if properties.TextStrokeColor3 then instance.TextStrokeColor3 = properties.TextStrokeColor3 end
+
+    if properties.CornerRadius then
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = properties.CornerRadius
+        corner.Parent = instance
+    end
+    if properties.StrokeColor then
+        local stroke = Instance.new("UIStroke")
+        stroke.Name = "UIStroke"
+        stroke.Color = properties.StrokeColor
+        stroke.Thickness = properties.StrokeThickness or 2
+        stroke.Transparency = properties.StrokeTransparency or 0
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Parent = instance
+    end
+    if properties.Padding and type(properties.Padding) == "table" then
+        local padding = Instance.new("UIPadding")
+        padding.PaddingTop = properties.Padding.Top or UDim.new(0,0)
+        padding.PaddingBottom = properties.Padding.Bottom or UDim.new(0,0)
+        padding.PaddingLeft = properties.Padding.Left or UDim.new(0,0)
+        padding.PaddingRight = properties.Padding.Right or UDim.new(0,0)
+        padding.Parent = instance
+    end
+    return instance
+end
+
+local function formatWeight(w)
+    if not w then return "0kg" end
+    if w >= 1000 then
+        return string.format("%.0fK kg", w / 1000)
+    end
+    return tostring(w) .. " kg"
+end
+
+local function formatImageId(id)
+    if not id or id == "" or id == 0 then return "rbxassetid://11576720138" end 
+    if type(id) == "string" and id:match("^rbxassetid://") then return id end
+    return "rbxassetid://" .. tostring(id)
+end
+
+local function abbreviateNumber(number)
+    local n = tonumber(number) or 0
+    if n >= 1000000 then
+        local val = n / 1000000
+        local formatted = string.format("%.2f", val)
+        return formatted:gsub("%.?0+$", "") .. "M"
+    elseif n >= 1000 then
+        local val = n / 1000
+        local formatted = string.format("%.2f", val)
+        return formatted:gsub("%.?0+$", "") .. "K"
+    else
+        return tostring(n)
+    end
+end
+
+-- 4. MAIN UI CREATION
+local ScreenGui = create("ScreenGui", {
+    Name = "NJHeatherUI",
+    Parent = Players.LocalPlayer:WaitForChild("PlayerGui"),
+    ResetOnSpawn = false,
+    ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+})
+
+local MainFrame = create("Frame", {
+    Name = "MainFrame",
+    Parent = ScreenGui,
+    Size = UDim2.new(0, 700, 0, 400),
+    Position = UDim2.new(0.5, -350, 0.5, -200),
+    BackgroundColor3 = UI_CONFIG.Colors.White,
+    BorderSizePixel = 0,
+    CornerRadius = UDim.new(0, 12),
+    StrokeColor = UI_CONFIG.Colors.Pink,
+    StrokeThickness = 2
+})
+
+local Gradient = Instance.new("UIGradient")
+Gradient.Rotation = 90
+Gradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, UI_CONFIG.Colors.DarkGrey),
+    ColorSequenceKeypoint.new(1, UI_CONFIG.Colors.Purple)
+}
+Gradient.Parent = MainFrame
+
+local TitleBar = create("Frame", {
+    Name = "TitleBar",
+    Parent = MainFrame,
+    Size = UDim2.new(1, 0, 0, 60),
+    BackgroundTransparency = 1,
+})
+
+create("Frame", {
+    Name = "BottomBorder",
+    Parent = TitleBar,
+    Size = UDim2.new(1, 0, 0, 2), 
+    Position = UDim2.new(0, 0, 1, -2), 
+    BackgroundColor3 = UI_CONFIG.Colors.Pink,
+    BorderSizePixel = 0
+})
+
+create("TextLabel", {
+    Parent = TitleBar,
+    Size = UDim2.new(0, 200, 1, 0),
+    Position = UDim2.new(0, 20, 0, 0),
+    BackgroundTransparency = 1,
+    Text = UI_CONFIG.Title,
+    TextColor3 = UI_CONFIG.Colors.White,
+    Font = Enum.Font.GothamBlack,
+    TextSize = 32,
+    TextXAlignment = Enum.TextXAlignment.Left
+})
+
+local CloseButton = create("ImageButton", {
+    Parent = TitleBar,
+    Size = UDim2.new(0, 30, 0, 30),
+    Position = UDim2.new(1, -40, 0.5, -15),
+    BackgroundColor3 = UI_CONFIG.Colors.Pink,
+    Image = "", 
+    CornerRadius = UDim.new(0, 6)
+})
+
+create("TextLabel", {
+    Parent = CloseButton,
+    Size = UDim2.new(1, 0, 1, 0),
+    BackgroundTransparency = 1,
+    Text = "X",
+    TextColor3 = UI_CONFIG.Colors.Black,
+    Font = Enum.Font.GothamBlack,
+    TextSize = 18
+})
+
+local Sidebar = create("Frame", {
+    Parent = MainFrame,
+    Size = UDim2.new(0, 180, 1, -60),
+    Position = UDim2.new(0, 0, 0, 60),
+    BackgroundTransparency = 1,
+    Padding = {Top = UDim.new(0, 10), Bottom = UDim.new(0, 10), Left = UDim.new(0, 10), Right = UDim.new(0, 10)}
+})
+
+create("Frame", {
+    Name = "SidebarLine",
+    Parent = MainFrame,
+    Size = UDim2.new(0, 2, 1, -60), 
+    Position = UDim2.new(0, 180, 0, 60), 
+    BackgroundColor3 = UI_CONFIG.Colors.Pink,
+    BorderSizePixel = 0,
+    ZIndex = 5
+})
+
+create("UIListLayout", {
+    Parent = Sidebar,
+    Padding = UDim.new(0, 8),
+    HorizontalAlignment = Enum.HorizontalAlignment.Center
+})
+
+local ContentContainer = create("Frame", {
+    Parent = MainFrame,
+    Size = UDim2.new(1, -182, 1, -62), 
+    Position = UDim2.new(0, 182, 0, 62), 
+    BackgroundTransparency = 1,
+    Padding = {Top = UDim.new(0, 10), Left = UDim.new(0, 15), Right = UDim.new(0, 15), Bottom = UDim.new(0, 10)}
+})
+
+local PageWrappers = {} 
+local Pages = {} 
+
+local function createPage(pageName)
+    local wrapper = create("Frame", {
+        Name = pageName .. "_Wrapper",
+        Parent = ContentContainer,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Visible = false,
+    })
+    PageWrappers[pageName] = wrapper 
+
+    if pageName == "STORE" then
+        Pages[pageName] = wrapper
+        return wrapper
+    else
+        local scroll = create("ScrollingFrame", {
+            Parent = wrapper,
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            ScrollBarThickness = 4,
+            ScrollBarImageColor3 = UI_CONFIG.Colors.Pink,
+            BorderSizePixel = 0,
+            AutomaticCanvasSize = Enum.AutomaticSize.Y,
+            CanvasSize = UDim2.new(0, 0, 0, 0)
+        })
+        create("UIListLayout", {
+            Parent = scroll,
+            Padding = UDim.new(0, 10),
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            FillDirection = Enum.FillDirection.Vertical 
+        })
+        create("UIPadding", {
+            Parent = scroll,
+            PaddingBottom = UDim.new(0, 10),
+            PaddingRight = UDim.new(0, 6)
+        })
+        Pages[pageName] = scroll 
+        return scroll 
+    end
+end
+
+local function createRow(page, labelText, controlType, callback)
+    if not page then return end
+    
+    local rowFrame = create("Frame", {
+        Parent = page,
+        Size = UDim2.new(1, -10, 0, 50),
+        BackgroundColor3 = UI_CONFIG.Colors.White,
+        BackgroundTransparency = 0.9,
+        CornerRadius = UDim.new(0, 8)
+    })
+    create("TextLabel", {
+        Parent = rowFrame,
+        Size = UDim2.new(0.4, 0, 1, 0),
+        Position = UDim2.new(0, 15, 0, 0),
+        BackgroundTransparency = 1,
+        Text = labelText,
+        TextColor3 = UI_CONFIG.Colors.White,
+        Font = Enum.Font.GothamBold,
+        TextSize = 14, 
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+    if controlType == true then
+        local toggleFrame = create("Frame", {
+            Parent = rowFrame,
+            Size = UDim2.new(0, 140, 0, 30),
+            Position = UDim2.new(1, -150, 0.5, -15),
+            BackgroundTransparency = 1,
+        })
+        local toggled = false
+        local offBtn = create("TextButton", {
+            Parent = toggleFrame,
+            Size = UDim2.new(0.5, -2, 1, 0),
+            BackgroundColor3 = UI_CONFIG.Colors.Red,
+            BackgroundTransparency = 0, 
+            Text = "OFF",
+            TextColor3 = UI_CONFIG.Colors.White,
+            Font = Enum.Font.GothamBold,
+            TextSize = 14,
+            CornerRadius = UDim.new(0, 6)
+        })
+        local onBtn = create("TextButton", {
+            Parent = toggleFrame,
+            Size = UDim2.new(0.5, -2, 1, 0),
+            Position = UDim2.new(0.5, 2, 0, 0),
+            BackgroundColor3 = UI_CONFIG.Colors.Green,
+            BackgroundTransparency = 0.8, 
+            Text = "ON",
+            TextColor3 = UI_CONFIG.Colors.White,
+            Font = Enum.Font.GothamBold,
+            TextSize = 14,
+            CornerRadius = UDim.new(0, 6)
+        })
+        local function updateState()
+            toggled = not toggled
+            if toggled then
+                offBtn.BackgroundTransparency = 0.8
+                onBtn.BackgroundTransparency = 0
+            else
+                offBtn.BackgroundTransparency = 0
+                onBtn.BackgroundTransparency = 0.8
+            end
+            if callback then callback(toggled) end
+        end
+        offBtn.MouseButton1Click:Connect(function() if toggled then updateState() end end)
+        onBtn.MouseButton1Click:Connect(function() if not toggled then updateState() end end)
+    else
+        local btnText = controlType or "CLICK"
+        local btnContainer = create("Frame", {
+            Parent = rowFrame,
+            Size = UDim2.new(0, 140, 0, 30),
+            Position = UDim2.new(1, -150, 0.5, -15),
+            BackgroundTransparency = 1
+        })
+        local btn1 = create("TextButton", {
+            Parent = btnContainer,
+            Size = UDim2.new(1, 0, 1, 0), 
+            BackgroundColor3 = UI_CONFIG.Colors.White,
+            BackgroundTransparency = 0.7,
+            Text = btnText, 
+            TextColor3 = UI_CONFIG.Colors.Grey,
+            Font = Enum.Font.GothamBold,
+            TextSize = 12,
+            CornerRadius = UDim.new(0, 6)
+        })
+        btn1.MouseButton1Click:Connect(function() if callback then callback() end end)
+    end
+end
+
+local sidebarButtons = {} 
+local function SetActiveTab(clickedBtn)
+    for _, btn in pairs(sidebarButtons) do
+        local label = btn:FindFirstChild("TextLabel")
+        local icon = btn:FindFirstChild("IconLabel")
+        if btn == clickedBtn then
+            if btn then btn.BackgroundTransparency = 0.8 end
+            if label then label.TextColor3 = UI_CONFIG.Colors.Pink end
+            if icon then icon.TextColor3 = UI_CONFIG.Colors.Pink end
+            if PageWrappers[label.Text] then PageWrappers[label.Text].Visible = true end
+        else
+            if btn then btn.BackgroundTransparency = 0.9 end
+            if label then label.TextColor3 = UI_CONFIG.Colors.LightGrey end
+            if icon then icon.TextColor3 = UI_CONFIG.Colors.LightGrey end 
+            if PageWrappers[label.Text] then PageWrappers[label.Text].Visible = false end
+        end
+    end
+end
+
+for i, item in ipairs(menuItems) do
+    createPage(item.Name)
+    local btn = create("TextButton", {
+        Parent = Sidebar,
+        Size = UDim2.new(1, 0, 0, 45), 
+        BackgroundColor3 = UI_CONFIG.Colors.White,
+        BackgroundTransparency = 0.8,
+        Text = "",
+        CornerRadius = UDim.new(0, 8),
+    })
+    create("TextLabel", {
+        Name = "IconLabel",
+        Parent = btn,
+        Size = UDim2.new(0, 24, 0, 24), 
+        Position = UDim2.new(0, 15, 0.5, -12),
+        BackgroundTransparency = 1,
+        Text = item.IconText, 
+        TextColor3 = UI_CONFIG.Colors.LightGrey,
+        TextSize = 24, 
+        FontFace = UI_CONFIG.IconFont 
+    })
+    create("TextLabel", {
+        Name = "TextLabel",
+        Parent = btn,
+        Size = UDim2.new(1, -50, 1, 0),
+        Position = UDim2.new(0, 50, 0, 0),
+        BackgroundTransparency = 1,
+        Text = item.Name,
+        TextColor3 = UI_CONFIG.Colors.LightGrey,
+        Font = Enum.Font.GothamBlack, 
+        TextSize = 16, 
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+    table.insert(sidebarButtons, btn)
+    btn.MouseButton1Click:Connect(function() SetActiveTab(btn) end)
+end
+
+-- POPULATE DEFAULT PAGES
+if Pages["DASHBOARD"] then
+    createRow(Pages["DASHBOARD"], "SELL ITEMS", "SELL ALL", function() print("Sold all items") end)
+    createRow(Pages["DASHBOARD"], "SELL HAND", "SELL HAND", function() print("Sold hand items") end)
+    createRow(Pages["DASHBOARD"], "AUTO FISH", true, function(state) print("Auto Fish is now:", state) end)
+end
+
+local locations = {
+    {Name = "Ancient Jungle",   Pos = Vector3.new(1460, 7, -334)},
+    {Name = "Ancient Ruin",     Pos = Vector3.new(6078, -586, 4621)},
+    {Name = "Christmas Cave",   Pos = Vector3.new(531, -581, 8919)},
+    {Name = "Christmas Island", Pos = Vector3.new(1118, 23, 1550)},
+    {Name = "Coral Reefs",      Pos = Vector3.new(-3112, 4, 2193)},
+    {Name = "Crater Island",    Pos = Vector3.new(1049, 4, 5012)},
+    {Name = "Esoteric Depths",  Pos = Vector3.new(3191, -1303, 1419)},
+    {Name = "Fisherman Island", Pos = Vector3.new(95, 9, 2781)},
+    {Name = "Kohana",           Pos = Vector3.new(-857, 18, 468)},
+    {Name = "Kohana Volcano",   Pos = Vector3.new(-602, 44, 146)},
+    {Name = "Sacred Temple",    Pos = Vector3.new(1444, -23, -634)},
+    {Name = "Sisyphus Statue",  Pos = Vector3.new(-3702, -136, -1016)},
+    {Name = "Treasure Room",    Pos = Vector3.new(-3600, -267, -1580)},
+    {Name = "Tropical Grove",   Pos = Vector3.new(-2018, 9, 3750)},
+}
+
+if Pages["TELEPORT"] then
+    for _, loc in ipairs(locations) do
+        createRow(Pages["TELEPORT"], loc.Name, "TELEPORT", function()
+            local char = Players.LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                char.HumanoidRootPart.CFrame = CFrame.new(loc.Pos)
+            end
+        end)
+    end
+end
+
+-- STORE SETUP
+local StorePage = Pages["STORE"]
+local StoreNavbar = create("Frame", {
+    Parent = StorePage,
+    Size = UDim2.new(1, 0, 0, 35),
+    BackgroundTransparency = 1
+})
+create("UIListLayout", {
+    Parent = StoreNavbar,
+    FillDirection = Enum.FillDirection.Horizontal,
+    Padding = UDim.new(0, 10),
+    HorizontalAlignment = Enum.HorizontalAlignment.Left
+})
+
+local StoreContent = create("Frame", {
+    Parent = StorePage,
+    Size = UDim2.new(1, 0, 1, -40), 
+    Position = UDim2.new(0, 0, 0, 40), 
+    BackgroundTransparency = 1
+})
+
+local function createStoreCategory(catName)
+    local catBtn = create("TextButton", {
+        Parent = StoreNavbar,
+        Size = UDim2.new(0, 100, 1, 0),
+        BackgroundColor3 = UI_CONFIG.Colors.White,
+        BackgroundTransparency = 0.9,                    
+        Text = catName,
+        TextColor3 = UI_CONFIG.Colors.LightGrey,
+        Font = Enum.Font.GothamBlack,
+        TextSize = 14,
+        CornerRadius = UDim.new(0, 6)
+    })
+    
+    local slider = create("ScrollingFrame", {
+        Name = catName,
+        Parent = StoreContent,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        ScrollBarThickness = 4,
+        ScrollBarImageColor3 = UI_CONFIG.Colors.Pink,
+        BorderSizePixel = 0,
+        ScrollingDirection = Enum.ScrollingDirection.X, 
+        AutomaticCanvasSize = Enum.AutomaticSize.X,     
+        CanvasSize = UDim2.new(0,0,0,0),
+        Visible = false 
+    })
+    
+    create("UIListLayout", {
+        Parent = slider,
+        FillDirection = Enum.FillDirection.Horizontal,
+        Padding = UDim.new(0, 15),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        VerticalAlignment = Enum.VerticalAlignment.Center
+    })
+    
+    create("UIPadding", { 
+        Parent = slider, 
+        PaddingLeft = UDim.new(0, 10), 
+        PaddingRight = UDim.new(0, 10)
+    })
+
+    catBtn.MouseButton1Click:Connect(function()
+        for _, otherSlider in pairs(StoreContent:GetChildren()) do
+            if otherSlider:IsA("ScrollingFrame") then otherSlider.Visible = false end
+        end
+        for _, child in pairs(StoreNavbar:GetChildren()) do
+            if child:IsA("TextButton") then
+                child.TextColor3 = UI_CONFIG.Colors.LightGrey
+                child.BackgroundColor3 = UI_CONFIG.Colors.White
+                child.BackgroundTransparency = 0.9
+            end
+        end
+        slider.Visible = true
+        catBtn.TextColor3 = UI_CONFIG.Colors.Pink
+        catBtn.BackgroundColor3 = UI_CONFIG.Colors.White
+        catBtn.BackgroundTransparency = 0.8
+    end)
+    
+    return slider, catBtn
+end
+
+local function createItemCard(slider, itemId, name, price, stats, imageId, rawData, category)
+    local isOwned = false
+    local inventory = Data:GetExpect({"Inventory", category})
+    if inventory and (category == "Fishing Rods" or category == "Baits") then
+        for _, item in ipairs(inventory) do
+            if item.Id == itemId then
+                local staticData = ItemUtility.GetItemDataFromItemType(category, item.Id)
+                if staticData then
+                    isOwned = true
+                    break
+                end
+            end
+        end
+    end
+
+    local card = create("Frame", {
+        Parent = slider,
+        Size = UDim2.new(0, 150, 0, 230), 
+        BackgroundColor3 = UI_CONFIG.Colors.White,
+        BackgroundTransparency = 0.9,
+        CornerRadius = UDim.new(0, 8),
+        ClipsDescendants = true
+    })
+    
+    -- 1. BACKGROUND IMAGE
+    create("ImageLabel", {
+        Parent = card,
+        Size = UDim2.new(1, 0, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 1,
+        Image = imageId, 
+        ImageColor3 = Color3.fromRGB(255, 255, 255),
+        ScaleType = Enum.ScaleType.Fit, 
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        ZIndex = 1
+    })
+    
+    -- 2. NAME
+    create("TextLabel", {
+        Parent = card,
+        Size = UDim2.new(1, -10, 0, 25),
+        Position = UDim2.new(0, 5, 0, 15),
+        BackgroundTransparency = 1,
+        Text = name,
+        TextColor3 = UI_CONFIG.Colors.Pink,
+        Font = Enum.Font.GothamBlack,
+        TextSize = 18,
+        TextWrapped = true,
+        TextXAlignment = Enum.TextXAlignment.Center,
+        TextYAlignment = Enum.TextYAlignment.Top,
+        TextStrokeTransparency = 0,
+        TextStrokeColor3 = UI_CONFIG.Colors.Black,
+        ZIndex = 3
+    })
+
+    -- 3. BUTTON
+    if isOwned then
+        create("TextButton", { 
+            Parent = card,
+            Size = UDim2.new(1, -24, 0, 32),
+            Position = UDim2.new(0, 12, 1, -45),
+            BackgroundColor3 = UI_CONFIG.Colors.White,
+            BackgroundTransparency = 0.7,
+            Text = "OWNED",
+            TextColor3 = UI_CONFIG.Colors.Grey,
+            Font = Enum.Font.GothamBlack,
+            TextSize = 14,
+            CornerRadius = UDim.new(0, 6),
+            BorderSizePixel = 0,
+            AutoButtonColor = false,
+            Active = false,
+            ZIndex = 3
+        })
+    else
+        local buyBtn = create("TextButton", {
+            Parent = card,
+            Size = UDim2.new(1, -24, 0, 32),
+            Position = UDim2.new(0, 12, 1, -45),
+            BackgroundColor3 = UI_CONFIG.Colors.Green,
+            BackgroundTransparency = 0,
+            Text = "",
+            CornerRadius = UDim.new(0, 6),
+            BorderSizePixel = 0,
+            StrokeColor = UI_CONFIG.Colors.Black,
+            StrokeThickness = 2,
+            StrokeTransparency = 0.5,
+            ZIndex = 3
+        })
+
+        local buyBtnLayout = create("UIListLayout", {
+            Parent = buyBtn,
+            FillDirection = Enum.FillDirection.Horizontal,
+            HorizontalAlignment = Enum.HorizontalAlignment.Center,
+            VerticalAlignment = Enum.VerticalAlignment.Center,
+            Padding = UDim.new(0, 4)
+        })
+
+        local iconPrice = create("ImageLabel", {
+            Parent = buyBtn,
+            Image = "rbxassetid://137072626912445",
+            Size = UDim2.new(0, 18, 0, 18),
+            LayoutOrder = 1,
+            CornerRadius = UDim.new(1, 0),
+            BackgroundTransparency = 1,
+            StrokeColor = UI_CONFIG.Colors.Black,
+            StrokeThickness = 1,
+            BorderSizePixel = 0
+        })
+
+        local textPrice = create("TextLabel", {
+            Parent = buyBtn,
+            Text = abbreviateNumber(tostring(price)),
+            Font = Enum.Font.GothamBold,
+            TextColor3 = UI_CONFIG.Colors.White,
+            TextSize = 16,
+            BackgroundTransparency = 1,
+            Size = UDim2.new(0, 0, 1, 0),
+            AutomaticSize = Enum.AutomaticSize.X,
+            LayoutOrder = 2
+        })
+        
+        buyBtn.MouseButton1Click:Connect(function()
+            local Coin = Data:GetExpect("Coins")
+            if Coin < price then
+                TextNotificationController:DeliverNotification({
+                    Type = "Text";
+                    Text = "NJ: Insufficient Coins!";
+                    TextColor = {R = 255; G = 89; B = 89;};
+                    Font = Enum.Font.GothamBold;
+                    StrokeColor = UI_CONFIG.Colors.Black;
+                    StrokeThickness = 1;
+                    -- TextStrokeTransparency = 0.5;
+                    TextSize = 18;
+                    CustomDuration = 5;
+                })
+                return
+            end
+            local promptText = "NJ: Purchase " .. name .. " for " .. abbreviateNumber(tostring(price)) .. " Coins?"
+            local promptPromise = PromptController:FirePrompt(promptText, true) 
+            local success, userConfirmed = promptPromise:await()
+            if success and userConfirmed then
+                local successNet, net = pcall(function()
+                    return ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
+                end)
+
+                if successNet then
+                    local result = nil 
+                    if category == "Fishing Rods" then
+                        result = net["RF/PurchaseFishingRod"]:InvokeServer(itemId)
+                    elseif category == "Baits" then
+                        result = net["RF/PurchaseBait"]:InvokeServer(itemId)
+                    end
+                    
+                    if result == true then
+                        TextNotificationController:DeliverNotification({
+                            Type = "Text";
+                            Text = "NJ: Your Purchase " .. name .. " has been Completed.";
+                            TextColor = {R = 52; G = 142; B = 64;};
+                            TextSize = 18;
+                            Font = Enum.Font.GothamBold;
+                            -- TextStrokeTransparency = 0.5;
+                            StrokeColor = UI_CONFIG.Colors.Black;
+                            StrokeThickness = 1;
+                            CustomDuration = 5;
+                        })
+                        iconPrice.Visible = false
+                        textPrice.Visible = false
+                        buyBtn.Text = "OWNED"
+                        buyBtn.Font = Enum.Font.GothamBlack
+                        buyBtn.TextSize = 14
+                        buyBtn.TextColor3 = UI_CONFIG.Colors.Grey
+                        buyBtn.BackgroundColor3 = UI_CONFIG.Colors.White
+                        buyBtn.BackgroundTransparency = 0.7
+                        local stroke = buyBtn:FindFirstChildWhichIsA("UIStroke")
+                        if stroke then stroke:Destroy() end
+                        buyBtn.AutoButtonColor = false
+                        buyBtn.Active = false
+                    end
+                end
+            end
+            -- If userConfirmed is false (clicked No), nothing happens.
+        end)
+    end
+    
+    -- 4. STATS
+    create("TextLabel", {
+        Parent = card,
+        Size = UDim2.new(1, -10, 0, 50), 
+        Position = UDim2.new(0, 5, 1, -108),
+        BackgroundTransparency = 1,
+        Text = stats, 
+        TextColor3 = UI_CONFIG.Colors.White,
+        Font = Enum.Font.GothamBold,
+        TextSize = 16,
+        TextWrapped = true,
+        TextYAlignment = Enum.TextYAlignment.Bottom,
+        TextStrokeTransparency = 0,
+        TextStrokeColor3 = UI_CONFIG.Colors.Black,
+        ZIndex = 3
+    })
+end
+
+local RodSlider, RodBtn = createStoreCategory("RODS")
+local BaitSlider, BaitBtn = createStoreCategory("BAITS")
+local UtilSlider, UtilBtn = createStoreCategory("UTILITY")
+
+-- DATA SCRAPER
+local ShopData = { Rods = {}, Baits = {} }
+
+task.spawn(function()
+    local ItemsFolder = ReplicatedStorage:FindFirstChild("Items")
+    if not ItemsFolder then return end
+
+    for _, v in ipairs(ItemsFolder:GetChildren()) do
+        if v:IsA("ModuleScript") and v.Name:match("Rod") then
+            local success, r = pcall(require, v)
+            if success and r and (r.Price or 0) > 0 then
+                local luckVal = (r.RollData and r.RollData.BaseLuck or 1) * 100
+                local clickPwr = r.ClickPower or 0.05
+                local speedVal = math.round((clickPwr * 25) ^ 2.5)
+                local weightStr = formatWeight(r.MaxWeight or 5)
+                local statsStr = string.format("Luck: %.0f%%\nSpeed: %.0f%%\nWeight: %s", luckVal, speedVal, weightStr)
+                
+                table.insert(ShopData.Rods, {
+                    Id = r.Data and r.Data.Id,
+                    Name = (r.Data and r.Data.Name) or v.Name,
+                    Price = r.Price,
+                    Stats = statsStr,
+                    Image = formatImageId((r.Data and (r.Data.Image or r.Data.Icon)) or r.Icon or r.Image),
+                    Raw = r
+                })
+            end
+        end
+    end
+
+    local BaitFolder = (ItemsFolder and ItemsFolder:FindFirstChild("Bait")) or ReplicatedStorage:FindFirstChild("Baits") or ItemsFolder
+    if BaitFolder then
+        for _, v in ipairs(BaitFolder:GetChildren()) do
+            if v:IsA("ModuleScript") and not v.Name:match("Rod") then
+                local s, r = pcall(require, v)
+                if s and r and r.Data and (r.Price or 0) > 0 then
+                    if v.Name:match("Bait") or r.LureSpeed then
+                        local lureVal = (r.LureSpeed or 0)
+                        local statsStr = string.format("Lure: +%.0f%%", lureVal)
+                        table.insert(ShopData.Baits, {
+                            Id = r.Data.Id,
+                            Name = r.Data.Name or v.Name,
+                            Price = r.Price,
+                            Stats = statsStr,
+                            Image = formatImageId(r.Data.Image or r.Data.Icon),
+                            Raw = r
+                        })
+                    end
+                end
+            end
+        end
+    end
+    
+    table.sort(ShopData.Rods, function(a,b) return a.Price < b.Price end)
+    table.sort(ShopData.Baits, function(a,b) return a.Price < b.Price end)
+    
+    for _, item in ipairs(ShopData.Rods) do
+        createItemCard(
+            RodSlider,
+            item.Id,
+            item.Name,
+            item.Price,
+            item.Stats,
+            item.Image,
+            item.Raw,
+            "Fishing Rods"
+        )
+    end
+    for _, item in ipairs(ShopData.Baits) do
+        createItemCard(
+            BaitSlider,
+            item.Id,
+            item.Name,
+            item.Price,
+            item.Stats,
+            item.Image,
+            item.Raw,
+            "Baits"
+        )
+    end
+end)
+
+if sidebarButtons[1] then SetActiveTab(sidebarButtons[1]) end
+
+RodSlider.Visible = true
+RodBtn.TextColor3 = UI_CONFIG.Colors.Pink
+RodBtn.BackgroundColor3 = UI_CONFIG.Colors.White
+RodBtn.BackgroundTransparency = 0.8
+
+local dragging, dragInput, dragStart, startPos
+local function update(input)
+    local delta = input.Position - dragStart
+    local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    TweenService:Create(MainFrame, TweenInfo.new(0.1), {Position = newPos}):Play()
+end
+TitleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+    end
+end)
+TitleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+end)
+UserInputService.InputChanged:Connect(function(input) if input == dragInput and dragging then update(input) end end)
+CloseButton.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
