@@ -660,7 +660,7 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
             if Coin < price then
                 TextNotificationController:DeliverNotification({
                     Type = "Text";
-                    Text = "NJ: Insufficient Coins!";
+                    Text = "💎 NJ 💎\nInsufficient Coins!";
                     TextColor = {R = 255; G = 89; B = 89;};
                     Font = Enum.Font.GothamBold;
                     StrokeColor = UI_CONFIG.Colors.Black;
@@ -690,7 +690,7 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
                     if result == true then
                         TextNotificationController:DeliverNotification({
                             Type = "Text";
-                            Text = "NJ: Your Purchase " .. name .. " has been Completed.";
+                            Text = "💎 NJ 💎\nYou got {name}";
                             TextColor = {R = 52; G = 142; B = 64;};
                             TextSize = 18;
                             Font = Enum.Font.GothamBold;
