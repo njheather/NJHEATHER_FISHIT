@@ -522,8 +522,8 @@ local function createStoreCategory(catName)
         catBtn.TextColor3 = UI_CONFIG.Colors.Pink
         catBtn.BackgroundColor3 = UI_CONFIG.Colors.White
         catBtn.BackgroundTransparency = 0.8
-        catBtn.TextStrokeTransparency = 0
         catBtn.TextStrokeColor3 = UI_CONFIG.Colors.Black
+        catBtn.TextStrokeTransparency = 0
     end)
     
     return slider, catBtn
@@ -825,8 +825,8 @@ RodSlider.Visible = true
 RodBtn.TextColor3 = UI_CONFIG.Colors.Pink
 RodBtn.BackgroundColor3 = UI_CONFIG.Colors.White
 RodBtn.BackgroundTransparency = 0.8
-RodBtn.TextStrokeTransparency = 0
 RodBtn.TextStrokeColor3 = UI_CONFIG.Colors.Black
+RodBtn.TextStrokeTransparency = 0
 
 local dragging, dragInput, dragStart, startPos
 local function update(input)
