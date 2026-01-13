@@ -577,7 +577,7 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
         BackgroundTransparency = 1,
         Text = name,
         TextColor3 = UI_CONFIG.Colors.Pink,
-        TextSize = 18
+        TextSize = 18,
         Font = Enum.Font.GothamBlack,
         AutomaticSize = Enum.AutomaticSize.Y,
         TextWrapped = true,
