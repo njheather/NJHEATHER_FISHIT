@@ -241,7 +241,8 @@ local function createPage(pageName)
         local scroll = create("ScrollingFrame", {
             Parent = wrapper,
             Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 1,
+            BackgroundColor3 = UI_CONFIG.Colors.White,
+            BackgroundTransparency = 0.9,
             ScrollBarThickness = 4,
             ScrollBarImageColor3 = UI_CONFIG.Colors.Pink,
             BorderSizePixel = 0,
@@ -481,7 +482,8 @@ local function createStoreCategory(catName)
         Name = catName,
         Parent = StoreContent,
         Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
+        BackgroundColor3 = UI_CONFIG.Colors.White,
+        BackgroundTransparency = 0.9,
         ScrollBarThickness = 4,
         ScrollBarImageColor3 = UI_CONFIG.Colors.Pink,
         BorderSizePixel = 0,
@@ -520,6 +522,8 @@ local function createStoreCategory(catName)
         catBtn.TextColor3 = UI_CONFIG.Colors.Pink
         catBtn.BackgroundColor3 = UI_CONFIG.Colors.White
         catBtn.BackgroundTransparency = 0.8
+        catBtn.TextStrokeTransparency = 0,
+        catBtn.TextStrokeColor3 = UI_CONFIG.Colors.Black,
     end)
     
     return slider, catBtn
@@ -643,6 +647,8 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
             TextSize = 16,
             BackgroundTransparency = 1,
             Size = UDim2.new(0, 0, 1, 0),
+            TextStrokeColor3 = UI_CONFIG.Colors.Black,
+            TextStrokeTransparency = 0,
             AutomaticSize = Enum.AutomaticSize.X,
             LayoutOrder = 2
         })
@@ -819,6 +825,8 @@ RodSlider.Visible = true
 RodBtn.TextColor3 = UI_CONFIG.Colors.Pink
 RodBtn.BackgroundColor3 = UI_CONFIG.Colors.White
 RodBtn.BackgroundTransparency = 0.8
+RodBtn.TextStrokeTransparency = 0,
+RodBtn.TextStrokeColor3 = UI_CONFIG.Colors.Black,
 
 local dragging, dragInput, dragStart, startPos
 local function update(input)
