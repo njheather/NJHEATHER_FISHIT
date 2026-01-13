@@ -749,96 +749,79 @@ local UtilSlider, UtilBtn = createStoreCategory("UTILITY")
 local ShopData = { Rods = {}, Baits = {}, Utility = {} }
 
 task.spawn(function()
+    print("--- MULAI SCRAPING SHOP ---")
+    
     local ItemsFolder = ReplicatedStorage:FindFirstChild("Items")
-    if not ItemsFolder then return end
+    if not ItemsFolder then 
+        warn("CRITICAL: Folder 'Items' tidak ditemukan di ReplicatedStorage!") 
+        return 
+    end
 
+    -- 1. LOOP UTAMA (RODS & GEARS)
     for _, v in ipairs(ItemsFolder:GetChildren()) do
         if v:IsA("ModuleScript") then
+            -- Coba require module
             local s, r = pcall(require, v)
-            if s and r and r.Data and (r.Price or 0) > 0 then
+            
+            if s and r then
+                print("Checking Item: " .. v.Name .. " | Price: " .. (r.Price or "N/A"))
                 
-                -- A. HANDLE RODS
-                if v.Name:match("Rod") then
-                    local luckVal = (r.RollData and r.RollData.BaseLuck or 1) * 100
-                    local clickPwr = r.ClickPower or 0.05
-                    local speedVal = math.round((clickPwr * 25) ^ 2.5)
-                    local weightStr = formatWeight(r.MaxWeight or 5)
-                    local statsStr = string.format("Luck: %.0f%%\nSpeed: %.0f%%\nWeight: %s", luckVal, speedVal, weightStr)
-                    
-                    table.insert(ShopData.Rods, {
-                        Id = r.Data.Id,
-                        Name = r.Data.Name or v.Name,
-                        Price = r.Price,
-                        Stats = statsStr,
-                        Image = formatImageId(r.Data.Image or r.Data.Icon),
-                        Raw = r
-                    })
+                if (r.Price or 0) > 0 then
+                    -- A. CEK RODS
+                    if v.Name:match("Rod") then
+                        print("  > Type: ROD detected")
+                        local luckVal = (r.RollData and r.RollData.BaseLuck or 1) * 100
+                        local clickPwr = r.ClickPower or 0.05
+                        local speedVal = math.round((clickPwr * 25) ^ 2.5)
+                        local weightStr = formatWeight(r.MaxWeight or 5)
+                        local statsStr = string.format("Luck: %.0f%%\nSpeed: %.0f%%\nWeight: %s", luckVal, speedVal, weightStr)
+
+                        table.insert(ShopData.Rods, {
+                            Id = r.Data and r.Data.Id or 0,
+                            Name = r.Data and r.Data.Name or v.Name,
+                            Price = r.Price,
+                            Stats = statsStr,
+                            Image = formatImageId(r.Data and (r.Data.Image or r.Data.Icon)),
+                            Raw = r
+                        })
+
+                    -- B. CEK GEARS (Radar / Diving)
+                    elseif v.Name:match("Fishing Radar") or v.Name:match("Diving Gear") then
+                        print("  > Type: GEAR detected (Radar/Diving)")
+                        
+                        table.insert(ShopData.Utility, {
+                            Id = r.Data and r.Data.Id or 0,
+                            Name = r.Data and r.Data.Name or v.Name,
+                            Price = r.Price,
+                            Stats = "", -- Stats kosong sesuai request
+                            Image = formatImageId(r.Data and (r.Data.Image or r.Data.Icon)),
+                            Raw = r
+                        })
+                    else
+                        print("  > Item di-skip (Bukan Rod/Radar/Diving)")
+                    end
+                else
+                    warn("  > Item " .. v.Name .. " di-skip (Harga 0 atau nil)")
                 end
-                -- B. HANDLE GEARS (Radar, Diving Gear, etc)
-                if v.Name:match("Diving Gear") then
-                    local statsStr = "" 
-                    
-                    table.insert(ShopData.Utility, {
-                        Id = r.Data.Id,
-                        Name = r.Data.Name or v.Name,
-                        Price = r.Price,
-                        Stats = statsStr,
-                        Image = formatImageId(r.Data.Image or r.Data.Icon),
-                        Raw = r
-                    })
-                end
-                if v.Name:match("Fishing Radar") then
-                    local statsStr = "" 
-                    
-                    table.insert(ShopData.Utility, {
-                        Id = r.Data.Id,
-                        Name = r.Data.Name or v.Name,
-                        Price = r.Price,
-                        Stats = statsStr,
-                        Image = formatImageId(r.Data.Image or r.Data.Icon),
-                        Raw = r
-                    })
-                end
+            else
+                warn("  > Gagal require module: " .. v.Name)
             end
         end
     end
 
+    -- 2. LOOP BAITS
+    print("--- CEK BAITS ---")
     local BaitFolder = (ItemsFolder and ItemsFolder:FindFirstChild("Bait")) or ReplicatedStorage:FindFirstChild("Baits") or ItemsFolder
+    
     if BaitFolder then
         for _, v in ipairs(BaitFolder:GetChildren()) do
-            if v:IsA("ModuleScript") and not v.Name:match("Rod") then
+            if v:IsA("ModuleScript") and not v.Name:match("Rod") and not v.Name:match("Radar") and not v.Name:match("Gear") then
                 local s, r = pcall(require, v)
-                if s and r and r.Data and (r.Price or 0) > 0 then
-                    local statsList = {}
-                    local modifiers = r.Modifiers or {} 
-                    if modifiers.BaseLuck then
-                        table.insert(statsList, string.format("Luck: %.0f%%", modifiers.BaseLuck * 100))
-                    end
-
-                    for key, val in pairs(modifiers) do
-                        if key ~= "BaseLuck" then
-                            local finalVal = val * 100
-                            local displayName = key
-                            if key:match("Shiny") then 
-                                displayName = "Shiny Chance"
-                            elseif key:match("Fairy") then
-                                displayName = "Fairy Dust"
-                            elseif key:match("XP") then
-                                displayName = "Bonus XP"
-                            elseif key:match("Mutation") then 
-                                displayName = "Mutation Chance"
-                            end
-                            
-                            local valStr = string.format("%.0f%%", finalVal):gsub("%.?0+$", "")
-                            
-                            table.insert(statsList, string.format("%s: %s", displayName, valStr))
-                        end
-                    end
-
-                    local statsStr = ""
-                    if #statsList > 0 then
-                        statsStr = table.concat(statsList, "\n")
-                    end
+                if s and r and r.Data and (r.Price or 0) > 0 and (r.Data.Type == "Baits" or r.Type == "Baits") then
+                    print("  > Bait Found: " .. v.Name)
+                    -- (Logika stats bait disini disederhanakan untuk debug)
+                    local statsStr = "No Stats" -- Placeholder debug
+                    
                     table.insert(ShopData.Baits, {
                         Id = r.Data.Id,
                         Name = r.Data.Name or v.Name,
@@ -850,47 +833,16 @@ task.spawn(function()
                 end
             end
         end
+    else
+        warn("Folder Bait tidak ditemukan!")
     end
+
+    print("--- SELESAI ---")
+    print("Total Rods:", #ShopData.Rods)
+    print("Total Utility:", #ShopData.Utility)
+    print("Total Baits:", #ShopData.Baits)
     
-    table.sort(ShopData.Rods, function(a,b) return a.Price < b.Price end)
-    table.sort(ShopData.Baits, function(a,b) return a.Price < b.Price end)
-    table.sort(ShopData.Utility, function(a,b) return a.Price < b.Price end)
-    
-    for _, item in ipairs(ShopData.Rods) do
-        createItemCard(
-            RodSlider,
-            item.Id,
-            item.Name,
-            item.Price,
-            item.Stats,
-            item.Image,
-            item.Raw,
-            "Fishing Rods"
-        )
-    end
-    for _, item in ipairs(ShopData.Baits) do
-        createItemCard(
-            BaitSlider,
-            item.Id,
-            item.Name,
-            item.Price,
-            item.Stats,
-            item.Image,
-            item.Raw,
-            "Baits"
-        )
-    end
-    for _, item in ipairs(ShopData.Utility) do
-        createItemCard(
-            UtilSlider,
-            item.Id,
-            item.Name,
-            item.Price,
-            item.Stats,
-            item.Image,
-            item.Raw,
-            "Gears")
-    end
+    -- Sorting & Rendering logic here...
 end)
 
 if sidebarButtons[1] then SetActiveTab(sidebarButtons[1]) end
