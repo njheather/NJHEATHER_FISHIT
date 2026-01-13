@@ -719,7 +719,8 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
     end
     
     -- 4. STATS
-    create("TextLabel", {
+    -- PERBAIKAN: Kita simpan hasilnya ke dalam variabel 'statsLabel'
+    local statsLabel = create("TextLabel", {
         Parent = card,
         Size = UDim2.new(1, -10, 0, 50), 
         Position = UDim2.new(0, 5, 1, -108),
@@ -727,18 +728,24 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
         Text = stats, 
         TextColor3 = UI_CONFIG.Colors.White,
         Font = Enum.Font.GothamBold,
-        -- TextSize = 16,
-        TextScaled = true,
+        
+        -- Aktifkan TextScaled agar ukuran font dinamis
+        TextScaled = true, 
         TextWrapped = true,
-        TextYAlignment = Enum.TextYAlignment.Bottom,
+        
+        -- Gunakan Center agar teks 1 baris (Bait) rapi di tengah
+        TextYAlignment = Enum.TextYAlignment.Bottom, 
+        
         TextStrokeTransparency = 0,
         TextStrokeColor3 = UI_CONFIG.Colors.Black,
         ZIndex = 3
     })
+
+    -- Buat Constraint pembatas ukuran font
     local constraint = Instance.new("UITextSizeConstraint")
-    constraint.MaxTextSize = 16
-    constraint.MinTextSize = 8
-    constraint.Parent = statsLabel
+    constraint.MaxTextSize = 16 -- Font tidak akan lebih besar dari 16 (Bait aman)
+    constraint.MinTextSize = 10 -- Font tidak akan lebih kecil dari 10
+    constraint.Parent = statsLabel -- SEKARANG BERHASIL: statsLabel sudah didefinisikan
 end
 
 local RodSlider, RodBtn = createStoreCategory("RODS")
