@@ -727,12 +727,18 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
         Text = stats, 
         TextColor3 = UI_CONFIG.Colors.White,
         Font = Enum.Font.GothamBold,
-        TextSize = 16,
+        -- TextSize = 16,
+        TextScaled = true,
         TextWrapped = true,
         TextYAlignment = Enum.TextYAlignment.Bottom,
         TextStrokeTransparency = 0,
         TextStrokeColor3 = UI_CONFIG.Colors.Black,
         ZIndex = 3
+    })
+    create("UITextSizeConstraint", {
+        Parent = statsLabel,
+        MaxTextSize = 16,
+        MinTextSize = 10
     })
 end
 
