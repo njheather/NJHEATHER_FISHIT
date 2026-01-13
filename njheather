@@ -783,20 +783,21 @@ task.spawn(function()
 
                     for key, val in pairs(modifiers) do
                         if key ~= "BaseLuck" then
-
-                            local finalVal = val + 1
+                            local finalVal = val * 100
                             local displayName = key
                             if key:match("Shiny") then 
                                 displayName = "Shiny Chance"
                             elseif key:match("Fairy") then
                                 displayName = "Fairy Dust"
+                            elseif key:match("XP") then
+                                displayName = "Bonus XP"
                             elseif key:match("Mutation") then 
                                 displayName = "Mutation Chance"
                             end
                             
                             local valStr = string.format("%.2f", finalVal):gsub("%.?0+$", "")
                             
-                            table.insert(statsList, string.format("%s: x%s", displayName, valStr))
+                            table.insert(statsList, string.format("%s: %s", displayName, valStr))
                         end
                     end
 
