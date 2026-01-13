@@ -570,15 +570,16 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
     })
     
     -- 2. NAME
-    local nameLabel create("TextLabel", {
+    create("TextLabel", {
         Parent = card,
-        Size = UDim2.new(1, -10, 0, 25),
+        Size = UDim2.new(1, -10, 0, 0),
         Position = UDim2.new(0, 5, 0, 15),
         BackgroundTransparency = 1,
         Text = name,
         TextColor3 = UI_CONFIG.Colors.Pink,
+        TextSize = 18
         Font = Enum.Font.GothamBlack,
-        TextScaled = true,
+        AutomaticSize = Enum.AutomaticSize.Y,
         TextWrapped = true,
         TextXAlignment = Enum.TextXAlignment.Center,
         TextYAlignment = Enum.TextYAlignment.Top,
@@ -586,10 +587,6 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
         TextStrokeColor3 = UI_CONFIG.Colors.Black,
         ZIndex = 3
     })
-    local constraintName = Instance.new("UITextSizeConstraint")
-    constraintName.MaxTextSize = 18
-    constraintName.MinTextSize = 12
-    constraintName.Parent = nameLabel
 
     -- 3. BUTTON
     if isOwned then
