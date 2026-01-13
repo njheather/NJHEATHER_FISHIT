@@ -735,11 +735,10 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
         TextStrokeColor3 = UI_CONFIG.Colors.Black,
         ZIndex = 3
     })
-    create("UITextSizeConstraint", {
-        Parent = statsLabel,
-        MaxTextSize = 16,
-        MinTextSize = 10
-    })
+    local constraint = Instance.new("UITextSizeConstraint")
+    constraint.MaxTextSize = 16
+    constraint.MinTextSize = 8
+    constraint.Parent = statsLabel
 end
 
 local RodSlider, RodBtn = createStoreCategory("RODS")
