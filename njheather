@@ -264,94 +264,6 @@ local function createPage(pageName)
     end
 end
 
-local function createRow(page, labelText, controlType, callback)
-    if not page then return end
-    
-    local rowFrame = create("Frame", {
-        Parent = page,
-        Size = UDim2.new(1, -10, 0, 50),
-        BackgroundColor3 = UI_CONFIG.Colors.White,
-        BackgroundTransparency = 0.9,
-        CornerRadius = UDim.new(0, 8)
-    })
-    create("TextLabel", {
-        Parent = rowFrame,
-        Size = UDim2.new(0.4, 0, 1, 0),
-        Position = UDim2.new(0, 15, 0, 0),
-        BackgroundTransparency = 1,
-        Text = labelText,
-        TextColor3 = UI_CONFIG.Colors.White,
-        Font = Enum.Font.GothamBold,
-        TextSize = 14, 
-        TextXAlignment = Enum.TextXAlignment.Left
-    })
-    if controlType == true then
-        local toggleFrame = create("Frame", {
-            Parent = rowFrame,
-            Size = UDim2.new(0, 140, 0, 30),
-            Position = UDim2.new(1, -150, 0.5, -15),
-            BackgroundTransparency = 1,
-        })
-        local toggled = false
-        local offBtn = create("TextButton", {
-            Parent = toggleFrame,
-            Size = UDim2.new(0.5, -2, 1, 0),
-            BackgroundColor3 = UI_CONFIG.Colors.Red,
-            BackgroundTransparency = 0, 
-            Text = "OFF",
-            TextColor3 = UI_CONFIG.Colors.White,
-            Font = Enum.Font.GothamBold,
-            TextSize = 14,
-            CornerRadius = UDim.new(0, 6)
-        })
-        local onBtn = create("TextButton", {
-            Parent = toggleFrame,
-            Size = UDim2.new(0.5, -2, 1, 0),
-            Position = UDim2.new(0.5, 2, 0, 0),
-            BackgroundColor3 = UI_CONFIG.Colors.Green,
-            BackgroundTransparency = 0.8, 
-            Text = "ON",
-            TextColor3 = UI_CONFIG.Colors.White,
-            Font = Enum.Font.GothamBold,
-            TextSize = 14,
-            CornerRadius = UDim.new(0, 6)
-        })
-        local function updateState()
-            toggled = not toggled
-            if toggled then
-                offBtn.BackgroundTransparency = 0.8
-                onBtn.BackgroundTransparency = 0
-            else
-                offBtn.BackgroundTransparency = 0
-                onBtn.BackgroundTransparency = 0.8
-            end
-            if callback then callback(toggled) end
-        end
-        offBtn.MouseButton1Click:Connect(function() if toggled then updateState() end end)
-        onBtn.MouseButton1Click:Connect(function() if not toggled then updateState() end end)
-    else
-        local btnText = controlType or "CLICK"
-        local btnContainer = create("Frame", {
-            Parent = rowFrame,
-            Size = UDim2.new(0, 140, 0, 30),
-            Position = UDim2.new(1, -150, 0.5, -15),
-            BackgroundTransparency = 1
-        })
-        local btn1 = create("TextButton", {
-            Parent = btnContainer,
-            Size = UDim2.new(1, 0, 1, 0), 
-            BackgroundColor3 = UI_CONFIG.Colors.White,
-            BackgroundTransparency = 0.7,
-            Text = btnText, 
-            TextColor3 = UI_CONFIG.Colors.Grey,
-            Font = Enum.Font.GothamBold,
-            TextSize = 12,
-            CornerRadius = UDim.new(0, 6)
-        })
-        btn1.MouseButton1Click:Connect(function() if callback then callback() end end)
-    end
-end
-
 local sidebarButtons = {} 
 local function SetActiveTab(clickedBtn)
     for _, btn in pairs(sidebarButtons) do
@@ -408,12 +320,236 @@ for i, item in ipairs(menuItems) do
     btn.MouseButton1Click:Connect(function() SetActiveTab(btn) end)
 end
 
+local function TriggerSell()
+    local successNet, net = pcall(function()
+        return ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
+    end)
+    if successNet then
+        local result = net["RF/SellAllItems"]:InvokeServer()
+        if result == true then
+            TextNotificationController:DeliverNotification({
+                Type = "Text";
+                Text = "💎 NJ 💎\nSell Completed!";
+                TextColor = {R = 52; G = 142; B = 64;};
+                TextSize = 18;
+                Font = Enum.Font.GothamBold;
+                -- TextStrokeTransparency = 0.5;
+                StrokeColor = UI_CONFIG.Colors.Black;
+                StrokeThickness = 1;
+                CustomDuration = 5;
+            })
+        end
+    end
+end
+
+local SellSettings = {
+    CountActive = false,
+    CountLimit = 0,
+    DurationActive = false,
+    DurationMinutes = 0,
+    LastDurationSell = tick()
+}
+
+local function GetBagCount()
+    local success, result = pcall(function()
+        local label = Players.PlayerGui:WaitForChild("Inventory").Main.Top.Options.Fish.Label.BagSize
+        local text = label.Text or "0/5000"
+        return tonumber(text:match("(%d+)/")) or 0
+    end)
+    return success and result or 0
+end
+
+local function createInputRow(page, labelText, placeholder, callback)
+    if not page then return end
+    
+    local rowFrame = create("Frame", {
+        Parent = page,
+        Size = UDim2.new(1, -10, 0, 50),
+        BackgroundColor3 = UI_CONFIG.Colors.White,
+        BackgroundTransparency = 0.9,
+        CornerRadius = UDim.new(0, 8)
+    })
+
+    -- Label
+    create("TextLabel", {
+        Parent = rowFrame,
+        Size = UDim2.new(0.3, 0, 1, 0),
+        Position = UDim2.new(0, 15, 0, 0),
+        BackgroundTransparency = 1,
+        Text = labelText,
+        TextColor3 = UI_CONFIG.Colors.White,
+        Font = Enum.Font.GothamBold,
+        TextSize = 14, 
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+
+    -- Input Box Container
+    local inputFrame = create("Frame", {
+        Parent = rowFrame,
+        Size = UDim2.new(0, 80, 0, 30),
+        Position = UDim2.new(1, -240, 0.5, -15),
+        BackgroundColor3 = UI_CONFIG.Colors.Black,
+        BackgroundTransparency = 0.5,
+        CornerRadius = UDim.new(0, 6)
+    })
+
+    local inputBox = create("TextBox", {
+        Parent = inputFrame,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        PlaceholderText = placeholder,
+        TextColor3 = UI_CONFIG.Colors.White,
+        PlaceholderColor3 = Color3.fromRGB(150, 150, 150),
+        Font = Enum.Font.Gotham,
+        TextSize = 12
+    })
+
+    -- Toggle Container
+    local toggleFrame = create("Frame", {
+        Parent = rowFrame,
+        Size = UDim2.new(0, 140, 0, 30),
+        Position = UDim2.new(1, -150, 0.5, -15),
+        BackgroundTransparency = 1,
+    })
+
+    local toggled = false
+    local offBtn = create("TextButton", {
+        Parent = toggleFrame,
+        Size = UDim2.new(0.5, -2, 1, 0),
+        BackgroundColor3 = UI_CONFIG.Colors.Red,
+        BackgroundTransparency = 0, 
+        Text = "OFF",
+        TextColor3 = UI_CONFIG.Colors.White,
+        Font = Enum.Font.GothamBold,
+        TextSize = 14,
+        CornerRadius = UDim.new(0, 6)
+    })
+    
+    local onBtn = create("TextButton", {
+        Parent = toggleFrame,
+        Size = UDim2.new(0.5, -2, 1, 0),
+        Position = UDim2.new(0.5, 2, 0, 0),
+        BackgroundColor3 = UI_CONFIG.Colors.Green,
+        BackgroundTransparency = 0.8, 
+        Text = "ON",
+        TextColor3 = UI_CONFIG.Colors.White,
+        Font = Enum.Font.GothamBold,
+        TextSize = 14,
+        CornerRadius = UDim.new(0, 6)
+    })
+
+    -- Logic Handler
+    local function handleUpdate()
+        local inputVal = tonumber(inputBox.Text) or 0
+        if callback then callback(toggled, inputVal) end
+    end
+
+    local function updateState()
+        toggled = not toggled
+        if toggled then
+            offBtn.BackgroundTransparency = 0.8
+            onBtn.BackgroundTransparency = 0
+        else
+            offBtn.BackgroundTransparency = 0
+            onBtn.BackgroundTransparency = 0.8
+        end
+        handleUpdate()
+    end
+    
+    inputBox.FocusLost:Connect(function() handleUpdate() end)
+    offBtn.MouseButton1Click:Connect(function() if toggled then updateState() end end)
+    onBtn.MouseButton1Click:Connect(function() if not toggled then updateState() end end)
+end
+
+local function createRow(page, labelText, controlType, callback)
+    if not page then return end
+    local rowFrame = create("Frame", {
+        Parent = page,
+        Size = UDim2.new(1, -10, 0, 50),
+        BackgroundColor3 = UI_CONFIG.Colors.White,
+        BackgroundTransparency = 0.9,
+        CornerRadius = UDim.new(0, 8)
+    })
+    create("TextLabel", {
+        Parent = rowFrame,
+        Size = UDim2.new(0.4, 0, 1, 0),
+        Position = UDim2.new(0, 15, 0, 0),
+        BackgroundTransparency = 1,
+        Text = labelText,
+        TextColor3 = UI_CONFIG.Colors.White,
+        Font = Enum.Font.GothamBold,
+        TextSize = 14, 
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+
+    local btnText = controlType or "CLICK"
+    local btnContainer = create("Frame", {
+        Parent = rowFrame,
+        Size = UDim2.new(0, 140, 0, 30),
+        Position = UDim2.new(1, -150, 0.5, -15),
+        BackgroundTransparency = 1
+    })
+    local btn1 = create("TextButton", {
+        Parent = btnContainer,
+        Size = UDim2.new(1, 0, 1, 0), 
+        BackgroundColor3 = UI_CONFIG.Colors.White,
+        BackgroundTransparency = 0.7,
+        Text = btnText, 
+        TextColor3 = UI_CONFIG.Colors.Grey,
+        Font = Enum.Font.GothamBold,
+        TextSize = 12,
+        CornerRadius = UDim.new(0, 6)
+    })
+    btn1.MouseButton1Click:Connect(function() if callback then callback() end end)
+end
+
 -- POPULATE DEFAULT PAGES
 if Pages["DASHBOARD"] then
-    createRow(Pages["DASHBOARD"], "SELL ITEMS", "SELL ALL", function() print("Sold all items") end)
-    createRow(Pages["DASHBOARD"], "SELL HAND", "SELL HAND", function() print("Sold hand items") end)
-    createRow(Pages["DASHBOARD"], "AUTO FISH", true, function(state) print("Auto Fish is now:", state) end)
+    
+    -- Option A: Manual Sell Button
+    createRow(Pages["DASHBOARD"], "MANUAL SELL", "SELL ALL", function() 
+        TriggerSell()
+    end)
+
+    -- Option B: Auto Sell by Count (Input + Toggle)
+    createInputRow(Pages["DASHBOARD"], "AUTO SELL (Count)", "Limit", function(active, input)
+        SellSettings.CountActive = active
+        SellSettings.CountLimit = input
+        print("Settings Updated: Count Active:", active, "Limit:", input)
+    end)
+
+    -- Option C: Auto Sell by Duration (Input + Toggle)
+    createInputRow(Pages["DASHBOARD"], "AUTO SELL (Mins)", "Minutes", function(active, input)
+        SellSettings.DurationActive = active
+        SellSettings.DurationMinutes = input
+        SellSettings.LastDurationSell = tick() -- Reset timer when toggled
+        print("Settings Updated: Time Active:", active, "Mins:", input)
+    end)
 end
+task.spawn(function()
+    while task.wait(1) do -- Checks every 1 second
+        
+        -- Logic: Sell By Count
+        if SellSettings.CountActive and SellSettings.CountLimit > 0 then
+            local currentItems = GetBagCount()
+            if currentItems >= SellSettings.CountLimit then
+                TriggerSell()
+                task.wait(2) -- Cooldown to prevent spam
+            end
+        end
+
+        -- Logic: Sell By Duration
+        if SellSettings.DurationActive and SellSettings.DurationMinutes > 0 then
+            local secondsLimit = SellSettings.DurationMinutes * 60
+            if (tick() - SellSettings.LastDurationSell) >= secondsLimit then
+                TriggerSell()
+                SellSettings.LastDurationSell = tick() -- Reset timer
+            end
+        end
+        
+    end
+end)
 
 local locations = {
     {Name = "Ancient Jungle",   Pos = Vector3.new(1460, 7, -334)},
