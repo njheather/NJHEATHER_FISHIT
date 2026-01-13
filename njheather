@@ -533,7 +533,7 @@ end
 
 local function createItemCard(slider, itemId, name, price, stats, imageId, rawData, category)
     local isOwned = false
-    if category == "Fishing Rods" or category == "Baits" then
+    if category == ("Fishing Rods" or "Baits") then
         local inventory = Data:GetExpect({"Inventory", category})
         if inventory then
             for _, item in ipairs(inventory) do
