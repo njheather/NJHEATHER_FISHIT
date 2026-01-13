@@ -241,6 +241,7 @@ local function createPage(pageName)
         local scroll = create("ScrollingFrame", {
             Parent = wrapper,
             Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
             ScrollBarThickness = 4,
             ScrollBarImageColor3 = UI_CONFIG.Colors.Pink,
             BorderSizePixel = 0,
@@ -480,6 +481,7 @@ local function createStoreCategory(catName)
         Name = catName,
         Parent = StoreContent,
         Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
         ScrollBarThickness = 4,
         ScrollBarImageColor3 = UI_CONFIG.Colors.Pink,
         BorderSizePixel = 0,
