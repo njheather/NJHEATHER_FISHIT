@@ -795,7 +795,7 @@ task.spawn(function()
                                 displayName = "Mutation Chance"
                             end
                             
-                            local valStr = string.format("%.0f%", finalVal):gsub("%.?0+$", "")
+                            local valStr = string.format("%.0f%%", finalVal):gsub("%.?0+$", "")
                             
                             table.insert(statsList, string.format("%s: %s", displayName, valStr))
                         end
