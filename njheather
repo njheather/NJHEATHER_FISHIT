@@ -533,16 +533,28 @@ end
 
 local function createItemCard(slider, itemId, name, price, stats, imageId, rawData, category)
     local isOwned = false
-    if category == "Fishing Rods" or category == "Baits" then
-        local inventory = Data:GetExpect({"Inventory", category})
-        if inventory then
-            for _, item in ipairs(inventory) do
-                if item.Id == itemId then
-                    local staticData = ItemUtility.GetItemDataFromItemType(category, item.Id)
-                    if staticData then
-                        isOwned = true
-                        break
-                    end
+    -- if category == "Fishing Rods" or category == "Baits" then
+    --     local inventory = Data:GetExpect({"Inventory", category})
+    --     if inventory then
+    --         for _, item in ipairs(inventory) do
+    --             if item.Id == itemId then
+    --                 local staticData = ItemUtility.GetItemDataFromItemType(category, item.Id)
+    --                 if staticData then
+    --                     isOwned = true
+    --                     break
+    --                 end
+    --             end
+    --         end
+    --     end
+    -- end
+    local inventory = Data:GetExpect({"Inventory", category})
+    if inventory then
+        for _, item in ipairs(inventory) do
+            if item.Id == itemId then
+                local staticData = ItemUtility.GetItemDataFromItemType(category, item.Id)
+                if staticData then
+                    isOwned = true
+                    break
                 end
             end
         end
@@ -863,7 +875,7 @@ task.spawn(function()
         createItemCard(BaitSlider, item.Id, item.Name, item.Price, item.Stats, item.Image, item.Raw, "Baits")
     end
     for _, item in ipairs(ShopData.Utility) do
-        createItemCard(UtilSlider, item.Id, item.Name, item.Price, item.Stats, item.Image, item.Raw, "Gears")
+        createItemCard(UtilSlider, item.Id, item.Name, item.Price, item.Stats, item.Image, item.Raw, "Items")
     end
 end)
 
