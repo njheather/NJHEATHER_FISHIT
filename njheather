@@ -454,7 +454,7 @@ create("UIListLayout", {
     Parent = StoreNavbar,
     FillDirection = Enum.FillDirection.Horizontal,
     Padding = UDim.new(0, 10),
-    HorizontalAlignment = Enum.HorizontalAlignment.Left
+    HorizontalAlignment = Enum.HorizontalAlignment.Center
 })
 
 local StoreContent = create("Frame", {
