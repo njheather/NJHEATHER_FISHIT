@@ -749,8 +749,8 @@ task.spawn(function()
 
     for _, v in ipairs(ItemsFolder:GetChildren()) do
         if v:IsA("ModuleScript") and v.Name:match("Rod") then
-            local success, r = pcall(require, v)
-            if success and r and (r.Price or 0) > 0 then
+            local s, r = pcall(require, v)
+            if s and r and (r.Price or 0) > 0 then
                 local luckVal = (r.RollData and r.RollData.BaseLuck or 1) * 100
                 local clickPwr = r.ClickPower or 0.05
                 local speedVal = math.round((clickPwr * 25) ^ 2.5)
@@ -775,18 +775,43 @@ task.spawn(function()
             if v:IsA("ModuleScript") and not v.Name:match("Rod") then
                 local s, r = pcall(require, v)
                 if s and r and r.Data and (r.Price or 0) > 0 then
-                    if v.Name:match("Bait") or r.LureSpeed then
-                        local lureVal = (r.LureSpeed or 0)
-                        local statsStr = string.format("Lure: +%.0f%%", lureVal)
-                        table.insert(ShopData.Baits, {
-                            Id = r.Data.Id,
-                            Name = r.Data.Name or v.Name,
-                            Price = r.Price,
-                            Stats = statsStr,
-                            Image = formatImageId(r.Data.Image or r.Data.Icon),
-                            Raw = r
-                        })
+                    local statsList = {}
+                    local modifiers = r.Modifiers or {} 
+                    if modifiers.BaseLuck then
+                        table.insert(statsList, string.format("Luck: %.0f%%", modifiers.BaseLuck * 100))
                     end
+
+                    for key, val in pairs(modifiers) do
+                        if key ~= "BaseLuck" then
+
+                            local finalVal = val + 1
+                            local displayName = key
+                            if key:match("Shiny") then 
+                                displayName = "Shiny Chance"
+                            elseif key:match("Fairy") then
+                                displayName = "Fairy Dust"
+                            elseif key:match("Mutation") then 
+                                displayName = "Mutation Chance"
+                            end
+                            
+                            local valStr = string.format("%.2f", finalVal):gsub("%.?0+$", "")
+                            
+                            table.insert(statsList, string.format("%s: x%s", displayName, valStr))
+                        end
+                    end
+
+                    local statsStr = ""
+                    if #statsList > 0 then
+                        statsStr = table.concat(statsList, "\n")
+                    end
+                    table.insert(ShopData.Baits, {
+                        Id = r.Data.Id,
+                        Name = r.Data.Name or v.Name,
+                        Price = r.Price,
+                        Stats = statsStr,
+                        Image = formatImageId(r.Data.Image or r.Data.Icon),
+                        Raw = r
+                    })
                 end
             end
         end
