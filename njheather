@@ -773,9 +773,21 @@ task.spawn(function()
                         Image = formatImageId(r.Data.Image or r.Data.Icon),
                         Raw = r
                     })
-                
+                end
                 -- B. HANDLE GEARS (Radar, Diving Gear, etc)
-                elseif v.Name:match("Fishing Radar") or v.Name:match("Diving Gear") then
+                if v.Name:match("Diving Gear") then
+                    local statsStr = "" 
+                    
+                    table.insert(ShopData.Utility, {
+                        Id = r.Data.Id,
+                        Name = r.Data.Name or v.Name,
+                        Price = r.Price,
+                        Stats = statsStr,
+                        Image = formatImageId(r.Data.Image or r.Data.Icon),
+                        Raw = r
+                    })
+                end
+                if v.Name:match("Fishing Radar") then
                     local statsStr = "" 
                     
                     table.insert(ShopData.Utility, {
