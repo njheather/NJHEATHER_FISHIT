@@ -842,6 +842,7 @@ task.spawn(function()
     
     table.sort(ShopData.Rods, function(a,b) return a.Price < b.Price end)
     table.sort(ShopData.Baits, function(a,b) return a.Price < b.Price end)
+    table.sort(ShopData.Utility, function(a,b) return a.Price < b.Price end)
     
     for _, item in ipairs(ShopData.Rods) do
         createItemCard(
