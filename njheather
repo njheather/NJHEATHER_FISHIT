@@ -671,7 +671,7 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
                 })
                 return
             end
-            local promptText = ":: NJ ::\nPurchase " .. name .. " for " .. abbreviateNumber(tostring(price)) .. " Coins?"
+            local promptText = "💎 NJ 💎\nPurchase " .. name .. " for " .. abbreviateNumber(tostring(price)) .. " Coins?"
             local promptPromise = PromptController:FirePrompt(promptText, true) 
             local success, userConfirmed = promptPromise:await()
             if success and userConfirmed then
