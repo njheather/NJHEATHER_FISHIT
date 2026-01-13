@@ -775,7 +775,7 @@ task.spawn(function()
                     })
                 
                 -- B. HANDLE GEARS (Radar, Diving Gear, etc)
-                elseif r.Data.Type == "Gears" and (v.Name:match("Fishing Radar") or v.Name:match("Diving Gear")) then
+                elseif v.Name:match("Fishing Radar") or v.Name:match("Diving Gear") then
                     local statsStr = "" 
                     
                     table.insert(ShopData.Utility, {
