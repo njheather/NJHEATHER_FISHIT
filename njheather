@@ -743,7 +743,7 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
 end
 
 local ShopData = { Rods = {}, Baits = {}, Utility = {} }
-if pages StorePage then
+if StorePage then
     local RodSlider, RodBtn = createStoreCategory("RODS")
     local BaitSlider, BaitBtn = createStoreCategory("BAITS")
     local UtilSlider, UtilBtn = createStoreCategory("UTILITY")
