@@ -719,7 +719,6 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
     end
     
     -- 4. STATS
-    -- PERBAIKAN: Kita simpan hasilnya ke dalam variabel 'statsLabel'
     local statsLabel = create("TextLabel", {
         Parent = card,
         Size = UDim2.new(1, -10, 0, 50), 
@@ -728,24 +727,18 @@ local function createItemCard(slider, itemId, name, price, stats, imageId, rawDa
         Text = stats, 
         TextColor3 = UI_CONFIG.Colors.White,
         Font = Enum.Font.GothamBold,
-        
-        -- Aktifkan TextScaled agar ukuran font dinamis
         TextScaled = true, 
         TextWrapped = true,
-        
-        -- Gunakan Center agar teks 1 baris (Bait) rapi di tengah
-        TextYAlignment = Enum.TextYAlignment.Bottom, 
-        
+        TextYAlignment = Enum.TextYAlignment.Bottom,
         TextStrokeTransparency = 0,
         TextStrokeColor3 = UI_CONFIG.Colors.Black,
         ZIndex = 3
     })
 
-    -- Buat Constraint pembatas ukuran font
     local constraint = Instance.new("UITextSizeConstraint")
-    constraint.MaxTextSize = 16 -- Font tidak akan lebih besar dari 16 (Bait aman)
-    constraint.MinTextSize = 10 -- Font tidak akan lebih kecil dari 10
-    constraint.Parent = statsLabel -- SEKARANG BERHASIL: statsLabel sudah didefinisikan
+    constraint.MaxTextSize = 16
+    constraint.MinTextSize = 10
+    constraint.Parent = statsLabel
 end
 
 local RodSlider, RodBtn = createStoreCategory("RODS")
@@ -753,30 +746,47 @@ local BaitSlider, BaitBtn = createStoreCategory("BAITS")
 local UtilSlider, UtilBtn = createStoreCategory("UTILITY")
 
 -- DATA SCRAPER
-local ShopData = { Rods = {}, Baits = {} }
+local ShopData = { Rods = {}, Baits = {}, Utility = {} }
 
 task.spawn(function()
     local ItemsFolder = ReplicatedStorage:FindFirstChild("Items")
     if not ItemsFolder then return end
 
     for _, v in ipairs(ItemsFolder:GetChildren()) do
-        if v:IsA("ModuleScript") and v.Name:match("Rod") then
+        if v:IsA("ModuleScript") then
             local s, r = pcall(require, v)
-            if s and r and (r.Price or 0) > 0 then
-                local luckVal = (r.RollData and r.RollData.BaseLuck or 1) * 100
-                local clickPwr = r.ClickPower or 0.05
-                local speedVal = math.round((clickPwr * 25) ^ 2.5)
-                local weightStr = formatWeight(r.MaxWeight or 5)
-                local statsStr = string.format("Luck: %.0f%%\nSpeed: %.0f%%\nWeight: %s", luckVal, speedVal, weightStr)
+            if s and r and r.Data and (r.Price or 0) > 0 then
                 
-                table.insert(ShopData.Rods, {
-                    Id = r.Data and r.Data.Id,
-                    Name = (r.Data and r.Data.Name) or v.Name,
-                    Price = r.Price,
-                    Stats = statsStr,
-                    Image = formatImageId((r.Data and (r.Data.Image or r.Data.Icon)) or r.Icon or r.Image),
-                    Raw = r
-                })
+                -- A. HANDLE RODS
+                if v.Name:match("Rod") then
+                    local luckVal = (r.RollData and r.RollData.BaseLuck or 1) * 100
+                    local clickPwr = r.ClickPower or 0.05
+                    local speedVal = math.round((clickPwr * 25) ^ 2.5)
+                    local weightStr = formatWeight(r.MaxWeight or 5)
+                    local statsStr = string.format("Luck: %.0f%%\nSpeed: %.0f%%\nWeight: %s", luckVal, speedVal, weightStr)
+                    
+                    table.insert(ShopData.Rods, {
+                        Id = r.Data.Id,
+                        Name = r.Data.Name or v.Name,
+                        Price = r.Price,
+                        Stats = statsStr,
+                        Image = formatImageId(r.Data.Image or r.Data.Icon),
+                        Raw = r
+                    })
+                
+                -- B. HANDLE GEARS (Radar, Diving Gear, etc)
+                elseif r.Data.Type == "Gears" then
+                    local statsStr = "" 
+                    
+                    table.insert(ShopData.Utility, {
+                        Id = r.Data.Id,
+                        Name = r.Data.Name or v.Name,
+                        Price = r.Price,
+                        Stats = statsStr,
+                        Image = formatImageId(r.Data.Image or r.Data.Icon),
+                        Raw = r
+                    })
+                end
             end
         end
     end
@@ -856,6 +866,17 @@ task.spawn(function()
             item.Raw,
             "Baits"
         )
+    end
+    for _, item in ipairs(ShopData.Utility) do
+        createItemCard(
+            UtilSlider,
+            item.Id,
+            item.Name,
+            item.Price,
+            item.Stats,
+            item.Image,
+            item.Raw,
+            "Gears")
     end
 end)
 
